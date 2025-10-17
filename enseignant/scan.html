@@ -1,0 +1,171 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Scan ultra réaliste</title>
+<style>
+  body {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    height: 100vh;
+    background: #0f0f0f;
+    color: #fff;
+    font-family: 'Courier New', monospace;
+    overflow: hidden;
+  }
+
+  h1 { margin-bottom: 20px; }
+
+  .circle-progress {
+    position: relative;
+    width: 250px;
+    height: 250px;
+  }
+
+  svg {
+    transform: rotate(-90deg);
+  }
+
+  circle {
+    fill: none;
+    stroke-width: 15;
+    stroke-linecap: round;
+  }
+
+  .bg { stroke: #222; }
+
+  .progress {
+    stroke: #0ff;
+    stroke-dasharray: 785;
+    stroke-dashoffset: 785;
+    transition: stroke-dashoffset 0.1s linear;
+  }
+
+  .scanner-line {
+    position: absolute;
+    top: 0; left: 0;
+    width: 250px; height: 250px;
+    border-radius: 50%;
+    box-shadow: 0 0 20px #0ff inset;
+    clip-path: polygon(50% 50%, 0% 0%, 100% 0%);
+    animation: scanRotate 3s linear infinite;
+  }
+
+  @keyframes scanRotate {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+
+  .progress-text {
+    position: absolute;
+    top: 50%; left: 50%;
+    transform: translate(-50%, -50%);
+    font-size: 1.5rem;
+    text-align: center;
+  }
+
+  .notifications {
+    margin-top: 30px;
+    width: 300px;
+    text-align: center;
+    max-height: 200px;
+    overflow-y: auto;
+  }
+
+  .notification {
+    background: #111;
+    padding: 10px;
+    margin-top: 5px;
+    border-left: 4px solid #0ff;
+    border-radius: 3px;
+    animation: fadein 0.5s;
+    font-size: 0.9rem;
+  }
+
+  @keyframes fadein {
+    from { opacity: 0; }
+    to { opacity: 1; }
+  }
+</style>
+</head>
+<body>
+
+<h1>Scan en cours...</h1>
+<div class="circle-progress">
+  <svg width="250" height="250">
+    <circle class="bg" cx="125" cy="125" r="125"></circle>
+    <circle class="progress" cx="125" cy="125" r="125"></circle>
+  </svg>
+  <div class="scanner-line"></div>
+  <div class="progress-text" id="progress-text">0%</div>
+</div>
+
+<div class="notifications" id="notifications"></div>
+
+<audio id="scan-sound" loop>
+  <source src="https://freesound.org/data/previews/33/33749_239424-lq.mp3" type="audio/mpeg">
+</audio>
+
+<script>
+const progressCircle = document.querySelector('.progress');
+const progressText = document.getElementById('progress-text');
+const notifications = document.getElementById('notifications');
+const scanSound = document.getElementById('scan-sound');
+
+// Total simulation time
+let totalDuration =  10 * 60 * 1000; // 2h
+let startTime = Date.now();
+
+// Démarrer son
+scanSound.volume = 0.2;
+scanSound.play();
+
+function addNotification(msg) {
+  const notif = document.createElement('div');
+  notif.className = 'notification';
+  notif.textContent = msg;
+  notifications.appendChild(notif);
+  notifications.scrollTop = notifications.scrollHeight;
+}
+
+function updateProgress() {
+  let elapsed = Date.now() - startTime;
+  let progress = Math.min(elapsed / totalDuration, 1);
+  let dashoffset = 785 - (785 * progress);
+  progressCircle.style.strokeDashoffset = dashoffset;
+  progressText.textContent = Math.floor(progress * 100) + "%";
+
+  // Notifications aléatoires pour plus de réalisme
+  if (Math.random() < 0.01) {
+    addNotification("Vérification d'un module en cours...");
+  }
+  if (Math.random() < 0.005) {
+    addNotification("Analyse des fichiers critiques...");
+  }
+
+  // Notification temps restant
+  let remainingHours = Math.ceil((totalDuration - elapsed)/(60*60*1000));
+  if (!document.getElementById('notif-remaining') && remainingHours <= 3) {
+    const notif = document.createElement('div');
+    notif.className = 'notification';
+    notif.id = 'notif-remaining';
+    notif.textContent = `Il reste environ ${remainingHours}h avant la fin du scan...`;
+    notifications.appendChild(notif);
+  }
+
+  if (progress < 1) {
+    requestAnimationFrame(updateProgress);
+  } else {
+    addNotification("Scan terminé !");
+    scanSound.pause();
+  }
+}
+
+updateProgress();
+</script>
+
+</body>
+</html>
